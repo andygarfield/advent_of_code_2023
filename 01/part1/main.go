@@ -55,5 +55,5 @@ func findTotal(input io.Reader) (int, error) {
 }
 
 func isDigit(b byte) bool {
-	return b >= 48 && b <= 57
+	return b >= '0' && b <= '9'
 }

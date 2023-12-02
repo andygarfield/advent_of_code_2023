@@ -24,6 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer f.Close()
 
 	answer, err := calculateAnswer(f)
 	if err != nil {
