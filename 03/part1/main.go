@@ -2,17 +2,14 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strconv"
 )
 
-type schematic struct {
-	input                        [][]rune
-	currentLine, currentLineChar uint
+type number struct {
+	lineIndex, startIndex, len int
 }
 
 func main() {
@@ -22,108 +19,65 @@ func main() {
 	}
 	defer f.Close()
 
-	schematic, err := NewSchematic(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	total := 0
-	for schematic.hasNext() {
-		total += schematic.next()
-	}
-	fmt.Println(total)
-	// should be 4473
-}
-
-func NewSchematic(r io.Reader) (*schematic, error) {
 	input := [][]rune{}
 
-	scanner := bufio.NewScanner(r)
+	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		input = append(input, []rune(scanner.Text()))
 	}
 
 	if len(input) == 0 {
-		return nil, errors.New("input must contain at least 1 line")
+		log.Fatal("input must contain at least 1 line")
 	}
 
-	return &schematic{input: input}, nil
-}
+	numbers := []number{}
 
-func (s *schematic) hasNext() bool {
-	return s.lineInBounds() && s.charInBounds()
-}
-
-func (s *schematic) charInBounds() bool {
-	if len(s.input[0]) == int(s.currentLineChar) {
-		return false
-	} else {
-		return true
-	}
-}
-
-func (s *schematic) lineInBounds() bool {
-	if len(s.input) == int(s.currentLine) {
-		return false
-	} else {
-		return true
-	}
-}
-
-func (s *schematic) next() int {
 	currentNumber := ""
-	getPartNumber := func() (int, bool) {
-		if len(currentNumber) > 0 {
-			isPartNumber := s.isPartNumber(
-				s.currentLine,
-				s.currentLineChar-uint(len(currentNumber)),
-				s.currentLineChar,
-			)
-			if isPartNumber {
-				num, err := strconv.Atoi(currentNumber)
-				if err != nil {
-					log.Panic(err)
-				}
-				return num, true
-			} else {
+	for i := 0; i < len(input); i++ {
+		line := input[i]
+		for j := 0; j < len(line); j++ {
+			thisChar := input[i][j]
+			if isDigit(thisChar) {
+				currentNumber += string(thisChar)
+			} else if len(currentNumber) > 0 {
+				numbers = append(
+					numbers,
+					number{
+						lineIndex:  i,
+						startIndex: j - len(currentNumber),
+						len:        len(currentNumber),
+					},
+				)
 				currentNumber = ""
-				return 0, false
 			}
 		}
-
-		return 0, false
-	}
-
-	for s.lineInBounds() {
-		for s.charInBounds() {
-			char := s.input[s.currentLine][s.currentLineChar]
-			if isDigit(char) {
-				currentNumber += string(char)
-			} else {
-				partNumber, isPartNumber := getPartNumber()
-				if isPartNumber {
-					return partNumber
-				}
-			}
-
-			s.currentLineChar++
-		}
-		partNumber, isPartNumber := getPartNumber()
-
-		s.currentLineChar = 0
-		s.currentLine++
-
-		if isPartNumber {
-			return partNumber
+		if len(currentNumber) > 0 {
+			numbers = append(
+				numbers,
+				number{
+					lineIndex:  i,
+					startIndex: len(line) - len(currentNumber),
+					len:        len(currentNumber),
+				},
+			)
+			currentNumber = ""
 		}
 	}
 
-	return 0
+	total := 0
+	for _, num := range numbers {
+		if num.isPartNumber(input) {
+			total += num.int(input)
+		}
+	}
+	fmt.Println(total)
+
+	// should be 525911
 }
 
-func (s *schematic) isPartNumber(lineNum, startIndex, toIndex uint) bool {
-	for _, indexSet := range s.findSurroundingIndexes(lineNum, startIndex, toIndex) {
-		checkingChar := s.input[indexSet[0]][indexSet[1]]
+func (n number) isPartNumber(input [][]rune) bool {
+	for _, indexSet := range n.findSurroundingIndexes(input) {
+		checkingChar := input[indexSet[0]][indexSet[1]]
 		if checkingChar != '.' && !isDigit(checkingChar) {
 			return true
 		}
@@ -132,40 +86,58 @@ func (s *schematic) isPartNumber(lineNum, startIndex, toIndex uint) bool {
 	return false
 }
 
-func (s *schematic) findSurroundingIndexes(lineNum, startIndex, toIndex uint) [][2]uint {
-	indices := [][2]uint{}
+func (n number) findSurroundingIndexes(input [][]rune) [][2]int {
+	indices := [][2]int{}
 
-	if startIndex != 0 {
-		startIndex -= 1
+	var startIndex, endIndex int
+	if n.startIndex == 0 {
+		startIndex = 0
+	} else {
+		startIndex = n.startIndex - 1
 	}
 
-	maxXIndex := uint(len(s.input[0]))
-	if toIndex != maxXIndex {
-		toIndex += 1
+	maxXIndex := len(input[0])
+	numEndIndex := n.startIndex + n.len
+	if numEndIndex == maxXIndex {
+		endIndex = maxXIndex
+	} else {
+		endIndex = numEndIndex + 1
 	}
 
-	maxLineNumber := uint(len(s.input) - 1)
-	var startLine, endLine uint
-	if lineNum == 0 {
+	maxLineNumber := len(input) - 1
+	var startLine, endLine int
+
+	if n.lineIndex == 0 {
 		startLine = 0
 	} else {
-		startLine = lineNum - 1
+		startLine = n.lineIndex - 1
 	}
 
-	if lineNum == maxLineNumber {
+	if n.lineIndex == maxLineNumber {
 		endLine = maxLineNumber
 	} else {
-		endLine = lineNum + 1
+		endLine = n.lineIndex + 1
 	}
 
-	//return indices
 	for i := startLine; i <= endLine; i++ {
-		for j := startIndex; j < toIndex; j++ {
-			indices = append(indices, [2]uint{i, j})
+		if i == n.lineIndex {
+			indices = append(indices, [2]int{i, startIndex}, [2]int{i, endIndex - 1})
+		} else {
+			for j := startIndex; j < endIndex; j++ {
+				indices = append(indices, [2]int{i, j})
+			}
 		}
 	}
 
 	return indices
+}
+
+func (n number) int(input [][]rune) int {
+	i, err := strconv.Atoi(string(input[n.lineIndex][n.startIndex : n.startIndex+n.len]))
+	if err != nil {
+		log.Panic(err)
+	}
+	return i
 }
 
 func isDigit(r rune) bool {
