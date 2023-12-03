@@ -32,13 +32,26 @@ func main() {
 
 	numberLocs := getNumberLocations(input)
 
-	total := 0
+	starToNumberLoc := map[[2]int][]numberLocation{}
 	for _, num := range numberLocs {
-		if isPartNumber(input, num) {
-			total += toInt(input, num)
+		for _, indexSet := range findSurroundingIndexes(input, num) {
+			checkingChar := input[indexSet[0]][indexSet[1]]
+			if checkingChar == '*' {
+				_, ok := starToNumberLoc[indexSet]
+				if !ok {
+					starToNumberLoc[indexSet] = []numberLocation{}
+				}
+				starToNumberLoc[indexSet] = append(starToNumberLoc[indexSet], num)
+			}
 		}
 	}
 
+	total := 0
+	for _, numberLocations := range starToNumberLoc {
+		if len(numberLocations) == 2 {
+			total += toInt(input, numberLocations[0]) * toInt(input, numberLocations[1])
+		}
+	}
 	fmt.Println(total)
 }
 
