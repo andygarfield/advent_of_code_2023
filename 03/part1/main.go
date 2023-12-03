@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-type number struct {
+type numberLocation struct {
 	lineIndex, startIndex, len int
 }
 
@@ -30,7 +30,7 @@ func main() {
 		log.Fatal("input must contain at least 1 line")
 	}
 
-	numbers := []number{}
+	numbers := []numberLocation{}
 
 	currentNumber := ""
 	for i := 0; i < len(input); i++ {
@@ -42,7 +42,7 @@ func main() {
 			} else if len(currentNumber) > 0 {
 				numbers = append(
 					numbers,
-					number{
+					numberLocation{
 						lineIndex:  i,
 						startIndex: j - len(currentNumber),
 						len:        len(currentNumber),
@@ -54,7 +54,7 @@ func main() {
 		if len(currentNumber) > 0 {
 			numbers = append(
 				numbers,
-				number{
+				numberLocation{
 					lineIndex:  i,
 					startIndex: len(line) - len(currentNumber),
 					len:        len(currentNumber),
@@ -66,8 +66,8 @@ func main() {
 
 	total := 0
 	for _, num := range numbers {
-		if num.isPartNumber(input) {
-			total += num.int(input)
+		if isPartNumber(input, num) {
+			total += toInt(input, num)
 		}
 	}
 	fmt.Println(total)
@@ -75,8 +75,8 @@ func main() {
 	// should be 525911
 }
 
-func (n number) isPartNumber(input [][]rune) bool {
-	for _, indexSet := range n.findSurroundingIndexes(input) {
+func isPartNumber(input [][]rune, num numberLocation) bool {
+	for _, indexSet := range findSurroundingIndexes(input, num) {
 		checkingChar := input[indexSet[0]][indexSet[1]]
 		if checkingChar != '.' && !isDigit(checkingChar) {
 			return true
@@ -86,18 +86,18 @@ func (n number) isPartNumber(input [][]rune) bool {
 	return false
 }
 
-func (n number) findSurroundingIndexes(input [][]rune) [][2]int {
+func findSurroundingIndexes(input [][]rune, num numberLocation) [][2]int {
 	indices := [][2]int{}
 
 	var startIndex, endIndex int
-	if n.startIndex == 0 {
+	if num.startIndex == 0 {
 		startIndex = 0
 	} else {
-		startIndex = n.startIndex - 1
+		startIndex = num.startIndex - 1
 	}
 
 	maxXIndex := len(input[0])
-	numEndIndex := n.startIndex + n.len
+	numEndIndex := num.startIndex + num.len
 	if numEndIndex == maxXIndex {
 		endIndex = maxXIndex
 	} else {
@@ -107,20 +107,20 @@ func (n number) findSurroundingIndexes(input [][]rune) [][2]int {
 	maxLineNumber := len(input) - 1
 	var startLine, endLine int
 
-	if n.lineIndex == 0 {
+	if num.lineIndex == 0 {
 		startLine = 0
 	} else {
-		startLine = n.lineIndex - 1
+		startLine = num.lineIndex - 1
 	}
 
-	if n.lineIndex == maxLineNumber {
+	if num.lineIndex == maxLineNumber {
 		endLine = maxLineNumber
 	} else {
-		endLine = n.lineIndex + 1
+		endLine = num.lineIndex + 1
 	}
 
 	for i := startLine; i <= endLine; i++ {
-		if i == n.lineIndex {
+		if i == num.lineIndex {
 			indices = append(indices, [2]int{i, startIndex}, [2]int{i, endIndex - 1})
 		} else {
 			for j := startIndex; j < endIndex; j++ {
@@ -132,8 +132,8 @@ func (n number) findSurroundingIndexes(input [][]rune) [][2]int {
 	return indices
 }
 
-func (n number) int(input [][]rune) int {
-	i, err := strconv.Atoi(string(input[n.lineIndex][n.startIndex : n.startIndex+n.len]))
+func toInt(input [][]rune, num numberLocation) int {
+	i, err := strconv.Atoi(string(input[num.lineIndex][num.startIndex : num.startIndex+num.len]))
 	if err != nil {
 		log.Panic(err)
 	}
