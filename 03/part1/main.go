@@ -89,10 +89,9 @@ func isPartNumber(input [][]rune, num numberLocation) bool {
 func findSurroundingIndexes(input [][]rune, num numberLocation) [][2]int {
 	indices := [][2]int{}
 
-	var startIndex, endIndex int
-	if num.startIndex == 0 {
-		startIndex = 0
-	} else {
+	var startIndex, endIndex, startLine, endLine int
+
+	if num.startIndex != 0 {
 		startIndex = num.startIndex - 1
 	}
 
@@ -105,11 +104,8 @@ func findSurroundingIndexes(input [][]rune, num numberLocation) [][2]int {
 	}
 
 	maxLineNumber := len(input) - 1
-	var startLine, endLine int
 
-	if num.lineIndex == 0 {
-		startLine = 0
-	} else {
+	if num.lineIndex != 0 {
 		startLine = num.lineIndex - 1
 	}
 
