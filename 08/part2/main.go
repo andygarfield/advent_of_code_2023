@@ -28,39 +28,70 @@ func main() {
 }
 
 func solve(directions []rune, nodes []node) uint64 {
-	currentNodes := findStartNodes(nodes)
+	startNodes := findStartNodes(nodes)
+	nodeSteps := make([]uint64, len(startNodes))
 
 	directionIndex := 0
 
-	var steps uint64
-	for !hasAllZs(currentNodes) {
-		if directionIndex == len(directions) {
-			directionIndex = 0
-		}
-		direction := directions[directionIndex]
-
-		for i, currentNode := range currentNodes {
-			if direction == 'L' {
-				currentNodes[i] = *currentNode.left
-			} else {
-				currentNodes[i] = *currentNode.right
+	for i, currentNode := range startNodes {
+		var steps uint64
+		for !strings.HasSuffix(currentNode.value, "Z") {
+			if directionIndex == len(directions) {
+				directionIndex = 0
 			}
-		}
+			direction := directions[directionIndex]
 
-		steps++
-		directionIndex++
+			if direction == 'L' {
+				currentNode = *currentNode.left
+			} else {
+				currentNode = *currentNode.right
+			}
+
+			steps++
+			directionIndex++
+		}
+		nodeSteps[i] = steps
 	}
 
-	return steps
+	return findLCM(nodeSteps)
 }
 
-func hasAllZs(nodes []node) bool {
-	for _, n := range nodes {
-		if !strings.HasSuffix(n.value, "Z") {
-			return false
+func findLCM(nums []uint64) uint64 {
+	multiples := make([]uint64, len(nums))
+	copy(multiples, nums)
+
+	sameNums := func() bool {
+		var n uint64
+		for i, num := range multiples {
+			if i == 0 {
+				n = num
+				continue
+			}
+			if n != num {
+				return false
+			}
 		}
+		return true
 	}
-	return true
+
+	for !sameNums() {
+		var smallest uint64
+		smallestIndex := 0
+		for i, multiple := range multiples {
+			if i == 0 {
+				smallest = multiple
+				continue
+			}
+
+			if multiple < smallest {
+				smallest = multiple
+				smallestIndex = i
+			}
+		}
+		multiples[smallestIndex] += nums[smallestIndex]
+	}
+
+	return multiples[0]
 }
 
 func findStartNodes(nodes []node) []node {
@@ -99,7 +130,6 @@ func parseInput(r io.ReadSeeker) ([]rune, []node) {
 	scanner.Scan()
 	scanner.Scan()
 
-	// create nodes
 	for scanner.Scan() {
 		line := scanner.Text()
 		value := line[:strings.Index(line, " ")]

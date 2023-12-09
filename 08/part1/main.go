@@ -76,7 +76,6 @@ func parseInput(r io.ReadSeeker) ([]rune, node) {
 	scanner.Scan()
 	scanner.Scan()
 
-	// create nodes
 	for scanner.Scan() {
 		line := scanner.Text()
 		value := line[:strings.Index(line, " ")]
