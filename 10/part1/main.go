@@ -69,7 +69,6 @@ func main() {
 }
 
 func solve(start pos, inputArea area, thisScreen *screen) int {
-	// find loop connected to start
 	pipeSides := findAdjacentPipes(inputArea, start, nil)
 	t1 := &traverser{current: pipeSides[0], previous: start, area: inputArea, count: 1}
 	t2 := &traverser{current: pipeSides[1], previous: start, area: inputArea, count: 1}
